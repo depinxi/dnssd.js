@@ -78,6 +78,7 @@ function Advertisement(type, port, options = {}) {
   this._defaultAddresses  = null;
   this._hostnameResponder = null;
   this._serviceResponder  = null;
+  this._customInterfaces  = options.customInterfaces;
 }
 
 Advertisement.prototype = Object.create(EventEmitter.prototype);
@@ -238,25 +239,16 @@ Advertisement.prototype._getDefaultID = function() {
   return new Promise((resolve, reject) => {
     const self = this;
 
-    const question = new QueryRecord({name: misc.fqdn(this.hostname, this._domain)});
-    const queryPacket = new Packet();
-    queryPacket.setQuestions([question]);
+    self._defaultAddresses = this._customInterfaces.map(intf => ({
+      address: intf,
+      netmask: '255.255.255.0',
+      family: 'IPv4',
+      mac: 'f0:2f:74:c3:8b:8b',
+      internal: false,
+      cidr: intf + '/24'
+    }));
 
-    // try to listen for our own query
-    this._interface.on('query', function handler(packet) {
-      if (packet.isLocal() && packet.equals(queryPacket)) {
-        self._defaultAddresses = Object.values(os.networkInterfaces()).find(intf =>
-          intf.some(({ address }) => address === packet.origin.address));
-
-        if (self._defaultAddresses) {
-          self._interface.off('query', handler);
-          resolve();
-        }
-      }
-    });
-
-    this._interface.send(queryPacket);
-    setTimeout(() => reject(new Error('Timed out getting default route')), 500);
+    resolve();
   });
 };
 
@@ -279,6 +271,8 @@ Advertisement.prototype._advertiseHostname = function() {
 
   const records = this._makeAddressRecords(this._defaultAddresses);
   const bridgeable = [].concat(...interfaces.map(i => this._makeAddressRecords(i)));
+
+	console.log("RECORDS:", records, 'from', this._defaultAddresses);
 
   return new Promise((resolve, reject) => {
     const responder = new Responder(this._interface, records, bridgeable);

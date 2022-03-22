@@ -111,6 +111,7 @@ describe('Query', function() {
       query.stop();
 
       expect(intf.removeListenersCreatedBy).to.have.been.calledWith(query);
+      expect(intf.stop).to.have.been.called;
     });
 
     it('should not do anything if already stopped', function() {

@@ -171,6 +171,7 @@ Query.prototype.stop = function() {
   this._intf.removeListenersCreatedBy(this);
   this._offswitch.removeListenersCreatedBy(this);
   this._intf.cache.removeListenersCreatedBy(this);
+  this._intf.stop();
   sleep.removeListenersCreatedBy(this);
 };
 

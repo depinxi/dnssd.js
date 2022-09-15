@@ -130,10 +130,6 @@ validate.txt = function txt(obj) {
     let size = Buffer.byteLength(key);
 
     // keys
-    if (Buffer.byteLength(key) > 9) {
-      throw new ValidationError("Key '%s' in TXT is > 9 chars", key);
-    }
-
     if (!!~key.indexOf('=')) {
       throw new ValidationError("Key '%s' in TXT contains a '='", key);
     }

@@ -265,7 +265,6 @@ serviceNames:
 \* only letters / digits / hyphens (but not consecutively: --)  
 
 TXT records  
-\* Keys <= 9 chars  
 \* Keys must be ascii and can't use '='  
 \* Values must be a string, buffer, number, or boolean  
 \* Each key/value pair must be < 255 bytes  

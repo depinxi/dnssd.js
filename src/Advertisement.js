@@ -168,8 +168,8 @@ Advertisement.prototype.stop = function (forceImmediate, callback) {
   // immediate shutdown (forced or if there aren't any active responders)
   // or wait for goodbyes on a clean shutdown
   if (forceImmediate || !numResponders) {
-    this._serviceResponder && this._serviceResponder.stop();
-    this._hostnameResponder && this._hostnameResponder.stop();
+    this._serviceResponder && this._serviceResponder.stop && this._serviceResponder.stop();
+    this._hostnameResponder && this._hostnameResponder.stop && this._hostnameResponder.stop();
     shutdown();
   } else {
     this._serviceResponder && this._serviceResponder.goodbye(done);

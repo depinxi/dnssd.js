@@ -224,7 +224,7 @@ class ServiceResolver extends StateMachine {
   isResolved() {
     return !!this.addresses.length &&
       !!this.target &&
-      !!this.port &&
+      Number.isInteger(this.port) &&
       !!this.txtRaw;
   }
 

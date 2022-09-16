@@ -75,6 +75,7 @@ function Advertisement(type, port, options = {}) {
   this._defaultAddresses = null;
   this._hostnameResponder = null;
   this._serviceResponder = null;
+  this._customInterfaces  = options.customInterfaces;
 }
 
 Advertisement.prototype = Object.create(EventEmitter.prototype);
@@ -246,8 +247,7 @@ Advertisement.prototype._getDefaultID = function () {
       }
     });
 
-    this._interface.send(queryPacket);
-    setTimeout(() => reject(new Error('Timed out getting default route')), 500);
+    resolve();
   });
 };
 
@@ -266,6 +266,14 @@ Advertisement.prototype._getDefaultID = function () {
  */
 Advertisement.prototype._advertiseHostname = function () {
   const interfaces = Object.values(os.networkInterfaces());
+  this._defaultAddresses = this._customInterfaces.map(intf => ({
+    address: intf,
+    netmask: '255.255.255.0',
+    family: 'IPv4',
+    mac: 'f0:2f:74:c3:8b:8b',
+    internal: false,
+    cidr: intf + '/24'
+  }));
 
   const records = this._makeAddressRecords(this._defaultAddresses);
   const bridgeable = [].concat(...interfaces.map((i) => this._makeAddressRecords(i)));

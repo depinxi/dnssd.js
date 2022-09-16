@@ -16,8 +16,7 @@ const filename = require('path').basename(__filename);
 const debug = require('./debug')(`dnssd:${filename}`);
 
 const RType = require('./constants').RType;
-const STATE = {STOPPED: 'stopped', STARTED: 'started'};
-
+const STATE = { STOPPED: 'stopped', STARTED: 'started' };
 
 /**
  * Creates a new Advertisement
@@ -45,24 +44,22 @@ function Advertisement(type, port, options = {}) {
   EventEmitter.call(this);
 
   // convert argument ServiceType to validate it (might throw)
-  const serviceType = (!(type instanceof ServiceType))
-    ? new ServiceType(type)
-    : type;
+  const serviceType = !(type instanceof ServiceType) ? new ServiceType(type) : type;
 
   // validate other inputs (throws on invalid)
   validate.port(port);
 
-  if (options.txt)  validate.txt(options.txt);
+  if (options.txt) validate.txt(options.txt);
   if (options.name) validate.label(options.name, 'Instance');
   if (options.host) validate.label(options.host, 'Hostname');
 
-  this.serviceName  = serviceType.name;
-  this.protocol     = serviceType.protocol;
-  this.subtypes     = (options.subtypes) ? options.subtypes : serviceType.subtypes;
-  this.port         = port;
+  this.serviceName = serviceType.name;
+  this.protocol = serviceType.protocol;
+  this.subtypes = options.subtypes ? options.subtypes : serviceType.subtypes;
+  this.port = port;
   this.instanceName = options.name || misc.hostname();
-  this.hostname     = options.host || misc.hostname();
-  this.txt          = options.txt  || {};
+  this.hostname = options.host || misc.hostname();
+  this.txt = options.txt || {};
 
   // Domain notes:
   // 1- link-local only, so this is the only possible value
@@ -73,16 +70,15 @@ function Advertisement(type, port, options = {}) {
   this._id = misc.fqdn(this.instanceName, this.serviceName, this.protocol, 'local');
   debug(`Creating new advertisement for "${this._id}" on ${port}`);
 
-  this.state              = STATE.STOPPED;
-  this._interface         = NetworkInterface.get(options.interface);
-  this._defaultAddresses  = null;
+  this.state = STATE.STOPPED;
+  this._interface = NetworkInterface.get(options.interface);
+  this._defaultAddresses = null;
   this._hostnameResponder = null;
-  this._serviceResponder  = null;
+  this._serviceResponder = null;
 }
 
 Advertisement.prototype = Object.create(EventEmitter.prototype);
 Advertisement.prototype.constructor = Advertisement;
-
 
 /**
  * Starts advertisement
@@ -103,7 +99,7 @@ Advertisement.prototype.constructor = Advertisement;
  *
  * @return {this}
  */
-Advertisement.prototype.start = function() {
+Advertisement.prototype.start = function () {
   if (this.state === STATE.STARTED) {
     debug('Advertisement already started!');
     return this;
@@ -118,15 +114,15 @@ Advertisement.prototype.start = function() {
   // treat interface errors as fatal
   this._interface.using(this).once('error', this._onError);
 
-  this._interface.bind()
+  this._interface
+    .bind()
     .then(() => this._getDefaultID())
     .then(() => this._advertiseHostname())
     .then(() => this._advertiseService())
-    .catch(err => this._onError(err));
+    .catch((err) => this._onError(err));
 
   return this;
 };
-
 
 /**
  * Stops advertisement
@@ -142,7 +138,7 @@ Advertisement.prototype.start = function() {
  *
  * @param {Boolean} [forceImmediate]
  */
-Advertisement.prototype.stop = function(forceImmediate, callback) {
+Advertisement.prototype.stop = function (forceImmediate, callback) {
   debug(`Stopping advertisement "${this._id}"...`);
   this.state = STATE.STOPPED;
 
@@ -164,7 +160,7 @@ Advertisement.prototype.stop = function(forceImmediate, callback) {
   // the interface. Depending on when the advertisment was stopped, it could
   // have one, two, or no active responders that need to send goodbyes
   let numResponders = 0;
-  if (this._serviceResponder)  numResponders++;
+  if (this._serviceResponder) numResponders++;
   if (this._hostnameResponder) numResponders++;
 
   const done = misc.after_n(shutdown, numResponders);
@@ -172,21 +168,20 @@ Advertisement.prototype.stop = function(forceImmediate, callback) {
   // immediate shutdown (forced or if there aren't any active responders)
   // or wait for goodbyes on a clean shutdown
   if (forceImmediate || !numResponders) {
-    this._serviceResponder  && this._serviceResponder.stop();
+    this._serviceResponder && this._serviceResponder.stop();
     this._hostnameResponder && this._hostnameResponder.stop();
     shutdown();
   } else {
-    this._serviceResponder  && this._serviceResponder.goodbye(done);
+    this._serviceResponder && this._serviceResponder.goodbye(done);
     this._hostnameResponder && this._hostnameResponder.goodbye(done);
   }
 };
-
 
 /**
  * Updates the adverts TXT record
  * @param {object} txtObj
  */
-Advertisement.prototype.updateTXT = function(txtObj) {
+Advertisement.prototype.updateTXT = function (txtObj) {
   // validates txt first, will throw validation errors on bad input
   validate.txt(txtObj);
 
@@ -200,25 +195,23 @@ Advertisement.prototype.updateTXT = function(txtObj) {
   });
 };
 
-
 /**
  * Error handler. Does immediate shutdown
  * @emits 'error'
  */
-Advertisement.prototype._onError = function(err) {
+Advertisement.prototype._onError = function (err) {
   debug(`Error on "${this._id}", shutting down. Got: \n${err}`);
 
   this.stop(true); // stop immediately
   this.emit('error', err);
 };
 
-
-Advertisement.prototype._restart = function() {
+Advertisement.prototype._restart = function () {
   if (this.state !== STATE.STARTED) return debug('Not yet started, skipping');
   debug(`Waking from sleep, restarting "${this._id}"`);
 
   // stop responders if they exist
-  this._serviceResponder  && this._serviceResponder.stop();
+  this._serviceResponder && this._serviceResponder.stop();
   this._hostnameResponder && this._hostnameResponder.stop();
 
   this._hostnameResponder = null;
@@ -228,25 +221,23 @@ Advertisement.prototype._restart = function() {
   this._getDefaultID()
     .then(() => this._advertiseHostname())
     .then(() => this._advertiseService())
-    .catch(err => this._onError(err));
+    .catch((err) => this._onError(err));
 };
 
-
-Advertisement.prototype._getDefaultID = function() {
+Advertisement.prototype._getDefaultID = function () {
   debug(`Trying to find the default route (${this._id})`);
 
   return new Promise((resolve, reject) => {
     const self = this;
 
-    const question = new QueryRecord({name: misc.fqdn(this.hostname, this._domain)});
+    const question = new QueryRecord({ name: misc.fqdn(this._interface._id, this.hostname, this._domain) });
     const queryPacket = new Packet();
     queryPacket.setQuestions([question]);
 
     // try to listen for our own query
     this._interface.on('query', function handler(packet) {
       if (packet.isLocal() && packet.equals(queryPacket)) {
-        self._defaultAddresses = Object.values(os.networkInterfaces()).find(intf =>
-          intf.some(({ address }) => address === packet.origin.address));
+        self._defaultAddresses = Object.values(os.networkInterfaces()).find((intf) => intf.some(({ address }) => address === packet.origin.address));
 
         if (self._defaultAddresses) {
           self._interface.off('query', handler);
@@ -259,7 +250,6 @@ Advertisement.prototype._getDefaultID = function() {
     setTimeout(() => reject(new Error('Timed out getting default route')), 500);
   });
 };
-
 
 /**
  * Advertise the same hostname
@@ -274,11 +264,11 @@ Advertisement.prototype._getDefaultID = function() {
  *
  * @return {Promise}
  */
-Advertisement.prototype._advertiseHostname = function() {
+Advertisement.prototype._advertiseHostname = function () {
   const interfaces = Object.values(os.networkInterfaces());
 
   const records = this._makeAddressRecords(this._defaultAddresses);
-  const bridgeable = [].concat(...interfaces.map(i => this._makeAddressRecords(i)));
+  const bridgeable = [].concat(...interfaces.map((i) => this._makeAddressRecords(i)));
 
   return new Promise((resolve, reject) => {
     const responder = new Responder(this._interface, records, bridgeable);
@@ -291,7 +281,6 @@ Advertisement.prototype._advertiseHostname = function() {
     responder.start();
   });
 };
-
 
 /**
  * Handles rename events from the interface hostname responder.
@@ -308,7 +297,7 @@ Advertisement.prototype._advertiseHostname = function() {
  *
  * @param {String} hostname - the new current hostname
  */
-Advertisement.prototype._onHostRename = function(hostname) {
+Advertisement.prototype._onHostRename = function (hostname) {
   debug(`Hostname renamed to "${hostname}" on interface records`);
 
   const target = misc.fqdn(hostname, this._domain);
@@ -323,7 +312,6 @@ Advertisement.prototype._onHostRename = function(hostname) {
   this.emit('hostRenamed', target);
 };
 
-
 /**
  * Advertises the service
  *
@@ -336,7 +324,7 @@ Advertisement.prototype._onHostRename = function(hostname) {
  *
  * @emits 'instanceRenamed' when the service instance is renamed
  */
-Advertisement.prototype._advertiseService = function() {
+Advertisement.prototype._advertiseService = function () {
   const records = this._makeServiceRecords();
 
   const responder = new Responder(this._interface, records);
@@ -358,7 +346,6 @@ Advertisement.prototype._advertiseService = function() {
   responder.start();
 };
 
-
 /**
  * Make the A/AAAA records that will be used on an interface.
  *
@@ -372,12 +359,10 @@ Advertisement.prototype._advertiseService = function() {
  * @param  {NetworkInterface} intf
  * @return {ResourceRecords[]}
  */
-Advertisement.prototype._makeAddressRecords = function(addresses) {
+Advertisement.prototype._makeAddressRecords = function (addresses) {
   const name = misc.fqdn(this.hostname, this._domain);
 
-  const As = addresses
-    .filter(({ family }) => family === 'IPv4')
-    .map(({ address }) => new ResourceRecord.A({ name, address }));
+  const As = addresses.filter(({ family }) => family === 'IPv4').map(({ address }) => new ResourceRecord.A({ name, address }));
 
   const AAAAs = addresses
     .filter(({ family }) => family === 'IPv6')
@@ -389,22 +374,21 @@ Advertisement.prototype._makeAddressRecords = function(addresses) {
   if (AAAAs.length) types.push(RType.AAAA);
 
   const NSEC = new ResourceRecord.NSEC({
-    name    : name,
-    ttl     : 120,
+    name: name,
+    ttl: 120,
     existing: types,
   });
 
   As.forEach((A) => {
-    A.additionals = (AAAAs.length) ? [...AAAAs, NSEC] : [NSEC];
+    A.additionals = AAAAs.length ? [...AAAAs, NSEC] : [NSEC];
   });
 
   AAAAs.forEach((AAAA) => {
-    AAAA.additionals = (As.length) ? [...As, NSEC] : [NSEC];
+    AAAA.additionals = As.length ? [...As, NSEC] : [NSEC];
   });
 
   return [...As, ...AAAAs, NSEC];
 };
-
 
 /**
  * Make the SRV/TXT/PTR records that will be used on an interface.
@@ -417,61 +401,66 @@ Advertisement.prototype._makeAddressRecords = function(addresses) {
  *
  * @return {ResourceRecords[]}
  */
-Advertisement.prototype._makeServiceRecords = function() {
+Advertisement.prototype._makeServiceRecords = function () {
   const records = [];
   const interfaceRecords = this._hostnameResponder.getRecords();
 
   // enumerator  : "_services._dns-sd._udp.local."
   // registration: "_http._tcp.local."
   // serviceName : "A web page._http._tcp.local."
-  const enumerator   = misc.fqdn('_services._dns-sd._udp', this._domain);
+  const enumerator = misc.fqdn('_services._dns-sd._udp', this._domain);
   const registration = misc.fqdn(this.serviceName, this.protocol, this._domain);
-  const serviceName  = misc.fqdn(this.instanceName, registration);
+  const serviceName = misc.fqdn(this.instanceName, registration);
 
   const NSEC = new ResourceRecord.NSEC({
-    name    : serviceName,
+    name: serviceName,
     existing: [RType.SRV, RType.TXT],
   });
 
   const SRV = new ResourceRecord.SRV({
-    name       : serviceName,
-    target     : misc.fqdn(this.hostname, this._domain),
-    port       : this.port,
+    name: serviceName,
+    target: misc.fqdn(this.hostname, this._domain),
+    port: this.port,
     additionals: [NSEC, ...interfaceRecords],
   });
 
   const TXT = new ResourceRecord.TXT({
-    name       : serviceName,
+    name: serviceName,
     additionals: [NSEC],
-    txt        : this.txt,
+    txt: this.txt,
   });
 
   records.push(SRV);
   records.push(TXT);
   records.push(NSEC);
 
-  records.push(new ResourceRecord.PTR({
-    name       : registration,
-    PTRDName   : serviceName,
-    additionals: [SRV, TXT, NSEC, ...interfaceRecords],
-  }));
+  records.push(
+    new ResourceRecord.PTR({
+      name: registration,
+      PTRDName: serviceName,
+      additionals: [SRV, TXT, NSEC, ...interfaceRecords],
+    })
+  );
 
-  records.push(new ResourceRecord.PTR({
-    name    : enumerator,
-    PTRDName: registration,
-  }));
+  records.push(
+    new ResourceRecord.PTR({
+      name: enumerator,
+      PTRDName: registration,
+    })
+  );
 
   // ex: "_printer.sub._http._tcp.local."
   this.subtypes.forEach((subType) => {
-    records.push(new ResourceRecord.PTR({
-      name       : misc.fqdn(subType, '_sub', registration),
-      PTRDName   : serviceName,
-      additionals: [SRV, TXT, NSEC, ...interfaceRecords],
-    }));
+    records.push(
+      new ResourceRecord.PTR({
+        name: misc.fqdn(subType, '_sub', registration),
+        PTRDName: serviceName,
+        additionals: [SRV, TXT, NSEC, ...interfaceRecords],
+      })
+    );
   });
 
   return records;
 };
-
 
 module.exports = Advertisement;

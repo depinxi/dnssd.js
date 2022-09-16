@@ -1,6 +1,6 @@
 {
   "name": "dnssd",
-  "version": "0.4.3",
+  "version": "0.5.3",
   "description": "Bonjour/Avahi-like service discovery in pure JavaScript",
   "keywords": [
     "bonjour",
@@ -10,8 +10,8 @@
   ],
   "author": "Sterling DeMille <sterlingdemille+npm@gmail.com>",
   "license": "MIT",
-  "repository": "https://github.com/illusionfield/dnssd.js",
-  "main": "index.js",
+  "repository": "https://github.com/DeMille/dnssd.js",
+  "main": "./lib",
   "devDependencies": {
     "babel-plugin-transform-runtime": "^6.23.0",
     "babel-preset-es2015": "^6.24.1",

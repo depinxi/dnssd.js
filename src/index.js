@@ -1,9 +1,9 @@
-var Advertisement    = require('./lib/Advertisement');
-var Browser          = require('./lib/Browser');
-var ServiceType      = require('./lib/ServiceType');
-var validate         = require('./lib/validate');
-var resolve          = require('./lib/resolve');
-var NetworkInterface = require('./lib/NetworkInterface');
+const Advertisement = require('./Advertisement');
+const Browser = require('./Browser');
+const ServiceType = require('./ServiceType');
+const validate = require('./validate');
+const resolve = require('./resolve');
+const NetworkInterface = require('./NetworkInterface');
 
 
 module.exports = {

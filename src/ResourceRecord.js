@@ -651,6 +651,10 @@ class NSEC extends ResourceRecord {
         }
       }
     }
+    // seek to the declared end of the NSEC section when finished parsing it.
+    // With recent DNS-SD implementations it seem to have 6 extra bytes 
+    // that are not parsed with this code, even with the restricted form
+    wrapper.seek(rdataEnd);
   }
 
   _writeRData(wrapper) {
